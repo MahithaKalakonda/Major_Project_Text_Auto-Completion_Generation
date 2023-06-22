@@ -1,0 +1,310 @@
+<!doctype html>
+<html>
+<head>
+	<title>AutoComplete Input Suggestion using Python and Flask</title>
+
+	<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+	<!--<script src="https://code.jquery.com/jquery-3.5.1.min.js" crossorigin="anonymous"></script>-->
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js" crossorigin="anonymous"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" crossorigin="anonymous"></script>
+	 
+
+	<style>
+		button#submit_btn {
+			margin-left: 10px;
+			margin-bottom: 10px;
+			height: 31px;
+			font-size: 14px;
+			background: darkmagenta;
+			color: white;
+			border-radius: 5px;
+		}
+		body{
+			font-family: sans-serif;
+			background-image: url("./static/images/bg.webp");
+			background-size: cover;
+			background-repeat: no-repeat;
+		}
+
+		
+
+		#result_box {
+			border: 2px solid black;
+			border-radius:5px;
+			width: 90%;
+			height:300px;
+			display: block;
+			margin:15px;
+			margin-left: 10px;
+			padding: 10px;
+			text-align: justify; 
+			overflow-y: auto;
+			font-family: monospace;
+		}
+
+		hr {
+			width: 853px;
+			height: 1px;
+			background-color: burlywood;
+			margin-bottom: 32px;
+		}
+
+		h1{
+			
+			background-color: rgba(0,0,0,0.4);
+			color: ghostwhite;
+			padding: 10px;
+			border-radius: 10px;
+		}
+
+		div#autocomplete_box {
+			height: 100px;
+			border: 1px solid gray;
+			border-radius: 8px;
+			overflow: auto;
+			padding: 10px;
+			width: 90%;
+			margin:15px;
+			margin-left: 10px;
+		}
+		p.suggestion_item , p.output_suggestion_item{
+			display: inline-block;
+			margin-right: 10px;
+			background: lightgray;
+			padding: 5px;
+			border-radius: 13px;
+		}
+
+		p.output_suggestion_item{
+			background-color: #275fc3;
+			color: white;
+		}
+
+		p.suggestion_item {
+    background-color: #5f69a0;
+    color: white;
+}
+
+		div#suggestion_box {
+			width: 90%;
+			margin-left: 10px;
+			max-height: 168px;
+			overflow: auto;
+			border: 1px solid gray;
+			padding: 10px;
+			border-radius: 8px;
+			display: none;
+		}
+
+		button:disabled{
+			opacity: 0.6;
+			cursor: not-allowed;
+		}
+	</style>
+</head>
+<body>
+	<h1 style="text-align: center;" >AutoComplete Input Suggestion using Python and Flask</h1>
+
+	<hr>
+	<div style="width: 800px; margin: auto; border-radius: 8px;">
+		
+		<p style="margin-left:10px;    font-size: 20px; display: inline-block;">
+			<input style="width: 400px;height: 26px;" type="text" name="search" id="searchBox" placeholder="Search Here" autocomplete="off"/>
+		</p>
+
+		<button id="submit_btn">Submit</button>
+
+		<div id="suggestion_box">
+
+		</div>
+
+		<textarea id="result_box" rows="8" cols="50"> </textarea>
+
+		<div id="autocomplete_box">
+
+		</div>
+	</div>
+
+	<script>
+
+$("#autocomplete_box").hide();
+
+		$("#submit_btn").click(function(){
+			$(this).attr('disabled','disabled');
+			let entered_input = $("#searchBox").val();
+			$.ajax({
+				type: "POST",
+				url : "/result",
+				dataType : "json",
+				cache: false,
+				data : {
+					input_text : entered_input
+				},
+				success : function(data) {  
+					$("#result_box").val("")
+					$("#result_box").val(data)
+					$("#submit_btn").removeAttr('disabled');
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.log(textStatus + " " + errorThrown);
+				}
+			});
+		})
+	</script>
+
+	<script>
+		function functionToExecute(value){
+			if($("#searchBox").val().endsWith(" ")){
+				$("#searchBox").val($("#searchBox").val() + value + " ");
+			}
+			else{
+				let initial_search_value = $("#searchBox").val(); 
+
+				if(initial_search_value.length == 1){ 
+					$("#searchBox").val(value + " ")
+				}else{
+					let split_search_value = $("#searchBox").val().split(" "); 
+					split_search_value[split_search_value.length - 1] = value; 
+					let final_search_value = split_search_value.join(" ") + " "; 
+					$("#searchBox").val(final_search_value);
+				}
+
+				
+			}
+
+			fetch_data();
+			
+		}
+
+		function functionToExecute_2(value){
+			const inp = document.querySelector('textarea'); 
+			const text = inp.value;  
+			const start_index = inp.selectionStart;  
+			const end_index = inp.selectionEnd;  
+			const previous_space_index = text.lastIndexOf( " ", start_index - 1 );  
+			const next_space_index = text.indexOf( " ", end_index );  
+			const startIndex = previous_space_index < 0 ? 0 : previous_space_index + 1; 
+			const endIndex = next_space_index < 0 ? text.length : next_space_index; 
+
+			let originalString = $("#result_box").val();
+			let newString = originalString.slice(0, startIndex) +  value  +  originalString.slice(endIndex);
+			console.log(newString); 
+
+			$("#result_box").val(newString)
+			$("#autocomplete_box").hide();
+
+			const cursor_word = text.substring( begin, end );  
+			console.log( cursor_word );
+			
+		}
+	</script>
+
+<script>
+	 
+		$("#searchBox").keyup(
+			fetch_data
+        ); 
+
+		function fetch_data(){ 
+				if($("#searchBox").val()){
+					$.ajax({
+					type: "POST",
+					url : "/search",
+					dataType : "json",
+					cache: false,
+					data : {
+						q : $("#searchBox").val()
+					},
+					success : function(data) {  
+						$("#suggestion_box").children().remove();
+						if(data.length > 0){
+							$("#suggestion_box").show();
+						}
+						else{
+							$("#suggestion_box").hide();
+						}
+						for (var i = 0; i < data.length; i++) {
+							$("#suggestion_box").append(`<p class= "suggestion_item" onclick="functionToExecute('${data[i]}')">${data[i]}</p>`)
+						} 
+						
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+						console.log(textStatus + " " + errorThrown);
+					}
+				});
+			 
+			} 
+		}
+
+		// ---------------------------------------
+
+		$("#result_box").keydown(function(e){
+
+			console.log(e.target.selectionStart) 
+
+			 
+
+ 
+
+			const inp = document.querySelector('textarea'); 
+			const text = inp.value; 
+			const start_index = inp.selectionStart; 
+			const end_index = inp.selectionEnd; 
+			const previous_space_index = text.lastIndexOf( " ", start_index - 1 ); 
+			const next_space_index = text.indexOf( " ", end_index ); 
+			const begin = previous_space_index < 0 ? 0 : previous_space_index + 1; 
+			const end = next_space_index < 0 ? text.length : next_space_index; 
+			const cursor_word = text.substring( begin, end );  
+			 
+			fetch_data_2(cursor_word)
+
+			
+		}
+			
+        ); 
+
+		function fetch_data_2(cursor_word){ 
+				if($("#result_box").val()){
+					$.ajax({
+					type: "POST",
+					url : "/autocomplete_text",
+					dataType : "json",
+					cache: false,
+					data : {
+						q : cursor_word
+					},
+					success : function(data) {  
+						$("#autocomplete_box").children().remove();
+						if(data.length > 0){
+							$("#autocomplete_box").show();
+						}
+						else{
+							$("#autocomplete_box").hide();
+						}
+						for (var i = 0; i < data.length; i++) {
+							$("#autocomplete_box").show();
+
+							$("#autocomplete_box").append(`<p class= "output_suggestion_item" onclick="functionToExecute_2('${data[i]}')">${data[i]}</p>`)
+						} 
+						
+					},
+					error: function(jqXHR, textStatus, errorThrown) {
+						console.log(textStatus + " " + errorThrown);
+					}
+				});
+			 
+			} 
+		}
+
+		
+
+
+ 
+
+
+	
+</script>
+
+
+
+</body>
